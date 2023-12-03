@@ -1,3 +1,9 @@
 .cookies.txt
 .direnv
 a.out
+
+# scala stuff
+.bloop
+.metals
+target
+project

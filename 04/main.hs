@@ -1,6 +1,8 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
-import Debug.Trace
+
+import Data.Array (Array, (!))
+import qualified Data.Array as Array
 
 data Card = Card Int [Int] [Int] deriving Show
 
@@ -41,14 +43,18 @@ part1 :: [Card] -> Int
 part1 cards = sum $ map cardPoints cards
 
 part2 :: [Card] -> Int
-part2 cards = sum $ map p2aux cards
+part2 cards = sum $ Array.elems memo
   where
-    p2aux :: Card -> Int
-    p2aux (Card id winning owned) = 1 + (sum $ map p2aux newcards)
-      where
-      newcards = take intersections (drop id cards)
-      intersections = intersectCount winning owned
+    -- build the memo array starting at the end (hence the double reverse)
+    -- so that we are sure that all indeces beyond ID are filled.
+    memo :: Array Int Int
+    memo = Array.listArray (1, length cards) $ reverse $ map count $ reverse cards
 
+    -- Because we iterate in reverse, we have already added all counts of
+    -- future cards, so we can look them up instantly from the array.
+    count :: Card -> Int
+    count (Card id winning owned) = 1 + sum [ memo ! n | n <- take i [(id+1)..] ]
+      where i = intersectCount winning owned
 
 main :: IO ()
 main = do
@@ -56,5 +62,5 @@ main = do
   case parse cardsParser "" input of
     Left err -> print err
     Right cards -> do
-      print $ part1 cards
-      print $ part2 cards
+      putStrLn $ "part 1: " ++ show (part1 cards)
+      putStrLn $ "part 2: " ++ show (part2 cards)

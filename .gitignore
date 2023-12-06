@@ -7,3 +7,7 @@ a.out
 .metals
 target
 project
+
+# ocaml
+*.cmo
+*.cmi

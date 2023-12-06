@@ -21,7 +21,7 @@
       in {
         devShell = pkgs.mkShell {
           name = "devshell";
-          buildInputs = with pkgs; [ inputgetter kotlin gcc scala ghc ];
+          buildInputs = with pkgs; [ inputgetter kotlin gcc scala ghc erlang ];
         };
       });
 }

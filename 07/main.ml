@@ -29,41 +29,17 @@ let parse_hand line =
   | End_of_file _ ->
     None
 
-let five_of_kind hand = Array.for_all (fun c -> c = hand.cards.(0)) hand.cards
+let five_of_kind maphand = CharMap.exists (fun _ count -> count = 5) maphand
+let four_of_kind maphand = CharMap.exists (fun _ count -> count = 4) maphand
+let three_of_kind maphand = CharMap.exists (fun _ count -> count = 3) maphand
+let two_of_kind maphand = CharMap.exists (fun _ count -> count = 2) maphand
+let full_house maphand = (three_of_kind maphand) && (two_of_kind maphand)
+let two_pairs maphand =
+  let bindings = CharMap.bindings maphand in
+  let pairs = Seq.filter (fun (c, count) -> count = 2) (List.to_seq bindings) in
+  Seq.length pairs = 2
 
-let four_of_kind hand =
-  let chars = hand.cards in
-  let c1 = 4 == Array.fold_left (fun acc c -> if c = chars.(0) then acc + 1 else acc) 0 chars in
-  let c2 = 4 == Array.fold_left (fun acc c -> if c = chars.(1) then acc + 1 else acc) 0 chars in
-  c1 || c2
 
-let full_house hand =
-  let chars = Array.copy hand.cards in
-  Array.sort Char.compare chars;
-  let c1 = Array.fold_left (fun acc c -> if c = chars.(0) then acc + 1 else acc) 0 chars in
-  let c2 = Array.fold_left (fun acc c -> if c = chars.(4) then acc + 1 else acc) 0 chars in
-
-  (c1 == 2 && c2 == 3) || (c1 == 3 && c2 == 2)
-
-let three_of_kind hand =
-  let chars = Array.copy hand.cards in
-  Array.sort Char.compare chars;
-  let c1 = Array.fold_left (fun acc c -> if c = chars.(0) then acc + 1 else acc) 0 chars in
-  let c2 = Array.fold_left (fun acc c -> if c = chars.(2) then acc + 1 else acc) 0 chars in
-  let c3 = Array.fold_left (fun acc c -> if c = chars.(4) then acc + 1 else acc) 0 chars in
-
-  c1 == 3 || c2 == 3 || c3 == 3
-
-let two_of_kind hand =
-  let rec check_duplicates chars =
-    match chars with
-    | [] -> false
-    | c :: rest ->
-      if List.mem c rest then
-        true
-      else
-        check_duplicates rest
-  in check_duplicates (Array.to_list hand.cards)
 
 let card_strength card =
   match card with
@@ -72,7 +48,7 @@ let card_strength card =
   | 'Q' -> 12
   | 'J' -> 11
   | 'T' -> 10
-  | '1' .. '9' -> int_of_char card - int_of_char '0'
+  | '1' .. '9' -> (int_of_char card) - (int_of_char '0')
   | _ -> failwith "Invalid card"
 
 let rec compare_card_by_card cards1 cards2 =
@@ -86,36 +62,42 @@ let rec compare_card_by_card cards1 cards2 =
     else
       s1 - s2
 
+let histogram hand =
+  let rec count_helper chars map =
+    match chars with
+    | [] -> map
+    | c :: rest ->
+      let updated_map =
+        match CharMap.find_opt c map with
+        | None -> CharMap.add c 1 map
+        | Some count -> CharMap.add c (count + 1) map
+      in count_helper rest updated_map
+    in count_helper hand CharMap.empty
 
 let compare_hands h1 h2 =
   let power hand =
-    let histogram =
-      Array.fold_left
-        (fun histogram char ->
-          CharMap.update char
-            (function
-              | None -> Some 1
-              | Some count -> Some (count + 1))
-            histogram)
-        CharMap.empty
-        hand
-    in
+    let map = histogram (Array.to_list (Array.copy hand)) in
     match () with
-    | _ when five_of_kind hand -> 5
-    | _ when four_of_kind hand -> 4
-    | _ when full_house hand -> 3
-    | _ when three_of_kind hand -> 2
-    | _ when two_of_kind hand -> 1
+    | _ when five_of_kind map -> 6
+    | _ when four_of_kind map -> 5
+    | _ when full_house map -> 4
+    | _ when three_of_kind map -> 3
+    | _ when two_pairs map -> 2
+    | _ when two_of_kind map -> 1
     | _ -> 0
   in
-  let power1 = power h1 in
-  let power2 = power h2 in
+  let power1 = power h1.cards in
+  let power2 = power h2.cards in
 
   if power1 == power2 then
     compare_card_by_card (Array.to_list h1.cards) (Array.to_list h2.cards)
   else
     power1 - power2
 
+let rec ranksum rank cards =
+  match cards with
+  | [] -> 0
+  | c :: tail -> (c.bet * rank) + ranksum (rank + 1) tail
 
 let () =
   let hands =
@@ -125,7 +107,7 @@ let () =
     |> List.of_seq
     |> List.sort compare_hands
   in
-
-  List.iter (fun { cards; bet } ->
-    Printf.printf "Hand: Cards %c %c %c %c %c; Bet: %d\n" cards.(0) cards.(1) cards.(2) cards.(3) cards.(4) bet
-  ) hands
+  Printf.printf "part 1: %d\n" (ranksum 1 hands)
+  (* List.iter (fun { cards; bet } -> *)
+  (*   Printf.printf "Hand: Cards %c %c %c %c %c; Bet: %d\n" cards.(0) cards.(1) cards.(2) cards.(3) cards.(4) bet *)
+  (* ) hands *)

@@ -58,11 +58,9 @@ part1 :: String -> NodesMap -> Int
 part1 directions = walk "AAA" ("ZZZ" ==) (cycle directions)
 
 part2 :: String -> NodesMap -> Int
-part2 directions nodes = case mapM duration startnodes of
-  Just (d : ds) -> foldl lcm d ds
-  Nothing -> error "couldnt find node in lookup (impossible?)"
+part2 directions nodes = lcm' $ map duration startnodes
   where
     stop = (== 'Z') . last
     startnodes = filter ((== 'A') . last) $ Map.keys nodes
-    memo = Map.fromList $ map (\s -> (s, walk s stop (cycle directions) nodes)) $ Map.keys nodes
-    duration loc = Map.lookup loc memo
+    duration loc = walk loc stop (cycle directions) nodes
+    lcm' (x : xs) = foldr lcm x xs

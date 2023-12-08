@@ -10,15 +10,15 @@ type NodesMap = Map.Map String Node
 -- Parse a single line into a Node
 parseNode :: Parser (String, Node)
 parseNode = do
-  name <- many1 letter
+  name <- many1 alphaNum
   spaces
   _ <- char '='
   spaces
   values <- between (char '(') (char ')') $ do
-    first <- many1 letter
+    first <- many1 alphaNum
     _ <- char ','
     spaces
-    second <- many1 letter
+    second <- many1 alphaNum
     return (Node first second)
   return (name, values)
 
@@ -44,24 +44,27 @@ main = do
       putStrLn $ "part 1: " ++ show (part1 directions nodesMap)
       putStrLn $ "part 2: " ++ show (part2 directions nodesMap)
 
-part1 :: String -> NodesMap -> Int
-part1 directions nodes = walk "AAA" (cycle directions) nodes
-  where
-    walk :: String -> String -> NodesMap -> Int
-    walk "ZZZ" _ _ = 0
-    walk loc (d : ds) nodes = case Map.lookup loc nodes of
+walk :: String -> (String -> Bool) -> String -> NodesMap -> Int
+walk loc stop (d : ds) nodes
+  | stop loc = 0
+  | otherwise = case Map.lookup loc nodes of
       Just (Node dl dr) -> 1 + walkdirection d dl dr
       Nothing -> error $ "node not in map: " ++ loc
-      where
-        walkdirection 'L' dl _ = walk dl ds nodes
-        walkdirection 'R' _ dr = walk dr ds nodes
+  where
+    walkdirection 'L' dl _ = walk dl stop ds nodes
+    walkdirection 'R' _ dr = walk dr stop ds nodes
+
+part1 :: String -> NodesMap -> Int
+part1 directions = walk "AAA" ("ZZZ" ==) (cycle directions)
 
 part2 :: String -> NodesMap -> Int
-part2 directions nodes = let startnodes = filter (\n -> last n == 'A') $ Map.keys nodes in walkmany (trace (show startnodes) startnodes) (cycle directions) nodes
+part2 directions nodes = walkmany startnodes (cycle directions) nodes
   where
+    startnodes = filter (\n -> last n == 'A') $ Map.keys nodes
+
     walkmany :: [String] -> String -> NodesMap -> Int
     walkmany locations (d : ds) nodes
-      | all (\l -> last l == 'Z') (trace (show locations) locations) = 0
+      | all (\l -> last l == 'Z') locations = 0
       | otherwise = 1 + walkmany locations' ds nodes
       where
         locations' = case mapM (`Map.lookup` nodes) locations of

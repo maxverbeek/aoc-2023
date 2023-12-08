@@ -58,18 +58,11 @@ part1 :: String -> NodesMap -> Int
 part1 directions = walk "AAA" ("ZZZ" ==) (cycle directions)
 
 part2 :: String -> NodesMap -> Int
-part2 directions nodes = walkmany startnodes (cycle directions) nodes
+part2 directions nodes = case mapM duration startnodes of
+  Just (d : ds) -> foldl lcm d ds
+  Nothing -> error "couldnt find node in lookup (impossible?)"
   where
-    startnodes = filter (\n -> last n == 'A') $ Map.keys nodes
-
-    walkmany :: [String] -> String -> NodesMap -> Int
-    walkmany locations (d : ds) nodes
-      | all (\l -> last l == 'Z') locations = 0
-      | otherwise = 1 + walkmany locations' ds nodes
-      where
-        locations' = case mapM (`Map.lookup` nodes) locations of
-          Just node -> map step node
-          Nothing -> error "couldn't find some nodes"
-        step (Node dl dr)
-          | d == 'L' = dl
-          | d == 'R' = dr
+    stop = (== 'Z') . last
+    startnodes = filter ((== 'A') . last) $ Map.keys nodes
+    memo = Map.fromList $ map (\s -> (s, walk s stop (cycle directions) nodes)) $ Map.keys nodes
+    duration loc = Map.lookup loc memo

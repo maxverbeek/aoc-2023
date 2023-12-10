@@ -29,6 +29,10 @@ func +(lhs: Location, rhs: Direction) -> Location {
     return (y: lhs.y + rhs.dy, x: lhs.x + rhs.dx)
 }
 
+func -(lhs: Location, rhs: Direction) -> Location {
+    return (y: lhs.y - rhs.dy, x: lhs.x - rhs.dx)
+}
+
 let north: Direction = (dy: -1, dx: 0)
 let east: Direction = (dy: 0, dx: 1)
 let south: Direction = (dy: 1, dx: 0)
@@ -40,7 +44,7 @@ func letterToDir(_ letter: Character) -> Direction? {
     case "E": return east
     case "S": return south
     case "W": return west
-    case _: print("letter does not have direction: ", letter); assert(false)
+    case _: print("letter does not have direction: ", letter); assert(false);
     }
 }
 
@@ -161,8 +165,10 @@ func walk2(map: inout [String], start: Location) {
 
     // start at the start position and keep walking until we are at the start again
     var pos = start
+    var oldpos = pos
     repeat {
-        let dir = letterToDir(lookup(map: map, pos: pos)!)!
+        let currentletter = lookup(map: map, pos: pos)!
+        let dir = letterToDir(currentletter)!
 
         // segment everything in "to the left" and "to the right" of the path
         // test if the neighbouring characters are part of the path
@@ -175,8 +181,22 @@ func walk2(map: inout [String], start: Location) {
         if let char = lookup(map: map, pos: right), char == "." {
             visit(map: &map, location: right, marker: "R")
         }
+
+        let oldletter = lookup(map: map, pos: oldpos)!
+
+        let backwardspos = pos - dir
+        if lookup(map: map, pos: backwardspos) == .some(".") && currentletter != oldletter {
+            // we made a bochtje
+            let olddir = letterToDir(oldletter)!
+
+            if rotateLeft(olddir) == dir {
+                visit(map: &map, location: backwardspos, marker: "R")
+            } else if rotateRight(olddir) == dir {
+                visit(map: &map, location: backwardspos, marker: "L")
+            }
+        }
         
-        let oldpos = pos
+        oldpos = pos
         pos = pos + dir
     } while pos != start
 }
@@ -236,7 +256,10 @@ for d in [north, east, south, west] {
         floodFill(map: &mutmap, target: "R")
         print(String(mutmap.joined(separator: "\n")))
         print("filled")
-        print(countChars(map: mutmap, target: "L"), countChars(map: mutmap, target: "R"))
+        let points = countChars(map: mutmap, target: ".")
+        let left = countChars(map: mutmap, target: "L")
+        let right = countChars(map: mutmap, target: "R")
+        print(left, right, left+points)
         break
     }
 }

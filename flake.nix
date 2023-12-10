@@ -26,9 +26,11 @@
             kotlin # day 1
             gcc # day 2
             scala # day 3, day 5
-            ghc # day 4
+            ghc # day 4, day 8
             erlang # day 6
-            ocaml # day 7
+            ocaml # day 7, day 9
+            swiftPackages.swift
+            swiftPackages.Foundation
           ];
         };
       });

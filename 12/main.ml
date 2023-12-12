@@ -12,8 +12,11 @@ let sum = List.fold_left (+) 0
 
 let parse_nums numstr = numstr |> String.split_on_char ',' |> List.map int_of_string
 
+
+let tolist str = str |> String.to_seq |> List.of_seq
+
 let parse_line line = match String.split_on_char ' ' line with
-    | [springs; nums] -> (springs, (parse_nums nums))
+    | [springs; nums] -> ((tolist springs), (parse_nums nums))
     | _ -> failwith "bad input"
 
 let rec combinations springs blocks = match (springs, blocks) with
@@ -24,19 +27,19 @@ let rec combinations springs blocks = match (springs, blocks) with
     | _ -> 0
 
 and validblock = function
+    | '#' :: tl, [] -> 0
     | '#' :: tl, 0 :: bs -> 0
+    | cs,        0 :: bs -> combinations cs bs
     | '#' :: tl, b :: bs -> validblock (tl, ((b - 1) :: bs))
-    | '.' :: tl, 0 :: bs -> combinations tl bs
     | cs, bs -> combinations cs bs
-
-let tolist str = str |> String.to_seq |> List.of_seq
 
 let () =
     let lines = read_lines_from_stdin() in
-    lines
+    let input = lines
         |> List.map parse_line
-        |> List.map (fun (s, bs) -> ((tolist s), bs))
-        |> List.map (fun (s, bs) -> combinations s bs)
-        |> sum
-        |> Printf.printf "part 1: %d";
+    in
+
+    let combinations = input |> List.map (fun (s, bs) -> combinations s bs) in
+    combinations |> List.iter (Printf.printf "%d\n");
+    combinations |> sum |> Printf.printf "%d\n";
 

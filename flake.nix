@@ -28,9 +28,10 @@
             scala # day 3, day 5
             ghc # day 4, day 8
             erlang # day 6
-            ocaml # day 7, day 9
-            swiftPackages.swift
-            swiftPackages.Foundation
+            ocaml # day 7, day 9, day 11?
+            swiftPackages.swift # day 10
+            swiftPackages.Foundation # day 10
+            lua # day 12
           ];
         };
       });

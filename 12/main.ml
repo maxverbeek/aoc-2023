@@ -19,7 +19,15 @@ let parse_line line = match String.split_on_char ' ' line with
     | [springs; nums] -> ((tolist springs), (parse_nums nums))
     | _ -> failwith "bad input"
 
-let rec combinations springs blocks = match (springs, blocks) with
+let dprint springs blocks =
+    List.iter (Printf.printf "%c") springs;
+    Printf.printf " [";
+    List.iter (Printf.printf "%d, ") blocks;
+    Printf.printf "]\n"
+
+let rec combinations springs blocks =
+    (* dprint springs blocks; *)
+    match (springs, blocks) with
     | ([], []) -> 1
     | ('.' :: tl, blocks) -> combinations tl blocks
     | ('#' :: tl, blocks) -> validblock (('#' :: tl), blocks)
@@ -27,10 +35,10 @@ let rec combinations springs blocks = match (springs, blocks) with
     | _ -> 0
 
 and validblock = function
+    | '#' :: tl, b :: bs when b > 0 -> validblock (tl, ((b - 1) :: bs))
     | '#' :: tl, [] -> 0
-    | '#' :: tl, 0 :: bs -> 0
-    | cs,        0 :: bs -> combinations cs bs
-    | '#' :: tl, b :: bs -> validblock (tl, ((b - 1) :: bs))
+    | '#' :: tl, 0 :: _ -> 0
+    | cs, 0 :: bs -> combinations cs bs
     | cs, bs -> combinations cs bs
 
 let () =

@@ -26,29 +26,50 @@ let dprint title springs blocks =
     List.iter (Printf.printf "%d, ") blocks;
     Printf.printf "]\n"
 
-let rec combinations springs blocks =
-    (* dprint "combinations" springs blocks; *)
-    match (springs, blocks) with
-    | ([], []) -> 1
-    | ('.' :: tl, blocks) -> combinations tl blocks
-    | ('#' :: tl, []) -> 0
-    | ('#' :: tl, b :: blocks) -> validblock (('#' :: tl), (b :: blocks))
-    | ('?' :: tl, blocks) ->
-        let c = combinations ('.' :: tl) blocks + combinations ('#' :: tl) blocks in
-        c
-    | _ -> 0
+let memo f =
+    let h = Hashtbl.create 100000 in
+    let rec g x =
+        match Hashtbl.find_opt h x with
+        | Some res -> res
+        | None ->
+            let res = f g x in
+            Hashtbl.add h x res;
+            res
+    in
+    g
 
-and validblock (cs, bs) =
-    (* dprint "validblocks" cs bs; *)
+let combinations springs blocks =
+  let memo_table = Hashtbl.create 100 in
+
+  let rec combinations_memo springs blocks =
+    let key = (springs, blocks) in
+    match Hashtbl.find_opt memo_table key with
+    | Some result -> result
+    | None ->
+      let result =
+        match (springs, blocks) with
+        | ([], []) -> 1
+        | ('.' :: tl, blocks) -> combinations_memo tl blocks
+        | ('#' :: tl, []) -> 0
+        | ('#' :: tl, b :: blocks) -> validblock (('#' :: tl), (b :: blocks))
+        | ('?' :: tl, blocks) ->
+            let c = combinations_memo ('.' :: tl) blocks + combinations_memo ('#' :: tl) blocks in
+            c
+        | _ -> 0
+      in
+      Hashtbl.add memo_table key result;
+      result
+
+  and validblock (cs, bs) =
     match (cs, bs) with
     | '#' :: tl, b :: bs when b > 0 -> validblock (tl, ((b - 1) :: bs))
     | '?' :: tl, b :: bs when b > 0 -> validblock (tl, ((b - 1) :: bs))
-    (* the only way to escape this loop succesfully is to end up with 0 left *)
-    | c :: cs, 0 :: bs when c != '#' -> combinations cs bs
-    | [],      0 :: bs -> combinations [] bs
-    (* all other cases are unsuccessfull *)
+    | c :: cs, 0 :: bs when c != '#' -> combinations_memo cs bs
+    | [], 0 :: bs -> combinations_memo [] bs
     | _ -> 0
+  in
 
+  combinations_memo springs blocks
 let rec repeatc n ls = match n with
     | 0 -> []
     | 1 -> ls
@@ -109,9 +130,7 @@ let () =
         |> List.map parse_line
     in
 
-    (* input |> solve |> Printf.printf "part 1: %d\n"; *)
+    input |> solve |> Printf.printf "part 1: %d\n";
 
     let input2 = List.map (fun (s, bs) -> (repeatc 5 s, repeatd 5 bs)) input in
-    input2 |> List.iter (fun (s, bs) -> dprint "input" s bs);
-
-    input2 |> solve |> print_int
+    input2 |> solve |> Printf.printf "part 2: %d\n"

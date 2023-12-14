@@ -33,6 +33,7 @@
             swiftPackages.Foundation # day 10
             lua # day 12
             elixir # day 13
+            cargo # day 14
           ];
         };
       });

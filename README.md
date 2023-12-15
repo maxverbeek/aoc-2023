@@ -16,3 +16,4 @@ This year's challenge is to use a randomly picked language every day:
 12. Lua (I did part 1 in Lua, part 2 in OCaml)
 13. Elixir
 14. Rust
+15. Swift

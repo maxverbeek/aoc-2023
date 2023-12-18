@@ -17,3 +17,5 @@ This year's challenge is to use a randomly picked language every day:
 13. Elixir
 14. Rust
 15. Swift
+16. Java
+17. JavaScript

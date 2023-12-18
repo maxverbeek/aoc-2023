@@ -34,6 +34,7 @@
             lua # day 12
             elixir # day 13
             cargo # day 14
+            nodePackages.ts-node # day 17
           ];
         };
       });

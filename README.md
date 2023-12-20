@@ -19,3 +19,6 @@ This year's challenge is to use a randomly picked language every day:
 15. Swift
 16. Java
 17. JavaScript
+18. Prolog (but I used Rust (and I tried it in OCaml but it was hard))
+19. Java
+20. Python

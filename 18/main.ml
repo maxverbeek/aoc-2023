@@ -45,7 +45,7 @@ module Coord = struct
     let dy, dx = offsets dir in
     let rec add n =
       match n with
-      | _ when n >= dist -> Seq.empty
+      | _ when n > dist -> Seq.empty
       | _ -> Seq.cons { row = row + (dy * n); col = col + (dx * n) } (add (n + 1))
     in
     add 0
@@ -71,15 +71,32 @@ let create_map steps =
   walk CoordSet.empty { row = 0; col = 0 } steps
 ;;
 
-let rec scanline coords inside =
-  match coords with
-  | c1 :: c2 :: cs when c1.row == c2.row ->
-    (match c1.col, c2.col, inside with
-     | a, b, i when a + 1 == b -> scanline (c2 :: cs) i
-     | a, b, false -> 1 + b - a + scanline (c2 :: cs) true
-     | a, b, true -> scanline (c2 :: cs) false)
-  | c1 :: c2 :: cs when c1.row != c2.row -> scanline (c2 :: cs) false
-  | _ -> 0
+let scanline coords =
+  let rec scan coords inside =
+    match coords with
+    | a :: b :: cs when a.row == b.row && a.col + 1 == b.col ->
+      Printf.printf "row %d -> +1\n" a.row;
+      1 + scan (b :: cs) inside
+    | a :: b :: cs when a.row == b.row && b.col > a.col + 1 ->
+      1 + (inside * (b.col - a.col)) + scan (b :: cs) (1 - inside)
+    | a :: b :: cs when a.row != b.row -> 1 + scan (b :: cs) 1
+    | cs -> List.length cs
+  in
+  scan coords 0
+;;
+
+let scanline2 coords =
+  let rec scan coords inside =
+    match coords with
+    | a :: b :: cs when a.row == b.row && a.col + 1 == b.col ->
+      Printf.printf "row %d -> +1\n" a.row;
+      1 + scan (b :: cs) inside
+    | a :: b :: cs when a.row == b.row && b.col > a.col + 1 ->
+      1 + (inside * (b.col - a.col)) + scan (b :: cs) (1 - inside)
+    | a :: b :: cs when a.row != b.row -> 1 + scan (b :: cs) 1
+    | cs -> List.length cs
+  in
+  scan coords 0
 ;;
 
 let () =
@@ -87,5 +104,7 @@ let () =
   let input = List.map parse_line lines in
   List.iter (fun { dir; dist } -> Printf.printf "%c %d\n" dir dist) input;
   let map = create_map input in
-  Printf.printf "%d\n" (scanline (List.of_seq @@ CoordSet.to_seq map) false)
+  let orderedcoords = List.of_seq @@ CoordSet.to_seq map in
+  List.iter (fun { row; col } -> Printf.printf "row %d; col %d\n" row col) orderedcoords;
+  Printf.printf "%d\n" (scanline orderedcoords)
 ;;

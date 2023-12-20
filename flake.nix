@@ -2,12 +2,16 @@
   inputs = {
     nixpkgs.url = "nixpkgs";
     utils.url = "github:numtide/flake-utils";
+    rustoverlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, utils }:
+  outputs = { self, nixpkgs, utils, rustoverlay }:
     utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        overlays = [ (import rustoverlay) ];
+        pkgs = import nixpkgs { inherit overlays system; };
+        rust-toolchain = pkgs.rust-bin.stable.latest;
+
         inputgetter = pkgs.writeScriptBin "getinput" ''
           outpath=''${1:-input.txt}
           daynum=$(expr $(basename $PWD) + 0)
@@ -18,6 +22,7 @@
 
           exec ${pkgs.curl}/bin/curl -o $outpath -H "cookie: $(cat ../.cookies.txt)" $url
         '';
+
       in {
         devShell = pkgs.mkShell {
           name = "devshell";
@@ -33,7 +38,7 @@
             swiftPackages.Foundation # day 10
             lua # day 12
             elixir # day 13
-            cargo # day 14
+            rust-toolchain.default # day 14
             nodePackages.ts-node # day 17
           ];
         };

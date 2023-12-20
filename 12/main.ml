@@ -124,13 +124,54 @@ let solve ls =
     List.iter (Printf.printf "%d\n") cs;
     sum cs
 
+type expect = Blocks of int | End | Either
+type state = expect * int list
+
+let step c (s: state): state list = match c with
+    | '#' -> begin match s with
+        | Blocks n, bs when n > 1 -> [(Blocks (n-1), bs)]
+        | Blocks 1, bs -> [End, bs]
+        | End, _ -> []
+        | _, bs -> [(Either, bs)]
+        end
+
+    | '.' -> begin match s with
+        | Blocks _, _ -> []
+        | End, bs -> [(Either, bs)]
+        | _, bs -> [(Either, bs)]
+        end
+
+    | '?' -> begin match s with
+        (* consume ? as a # *)
+        | Blocks 1, bs -> [(End, bs)]
+        | Blocks n, bs -> [(Blocks (n-1), bs)]
+
+        (* consume ? as a . *)
+        | End, bs -> [(Either, bs)]
+
+        (* it's not clear whether ? should be a . or a #, try both *)
+        | Either, b :: tl -> [(Blocks (b-1), tl); (Either, b :: tl)]
+        | Either, [] -> [(Either, [])]
+        end
+    | _ -> failwith "invalid character"
+
+let valid_endstate = function
+    | Blocks _, _ -> false
+    | End, [] -> true
+    | _, [] -> true
+    | _ -> false
+
+let rec walk cs states = match cs with
+    | c :: tl -> states |> List.map (step c) |> List.flatten |> walk tl
+    | [] -> List.filter valid_endstate states |> List.length
+
+let startwalking cs bs =
+    let init = [(Either, bs)] in
+    walk cs init
+
 let () =
     let lines = read_lines_from_stdin() in
-    let input = lines
-        |> List.map parse_line
-    in
-
-    input |> solve |> Printf.printf "part 1: %d\n";
-
-    let input2 = List.map (fun (s, bs) -> (repeatc 5 s, repeatd 5 bs)) input in
-    input2 |> solve |> Printf.printf "part 2: %d\n"
+    let input = lines |> List.map parse_line in
+    
+    let ans = List.map (fun (cs, bs) -> startwalking cs bs) input |> sum in
+    Printf.printf "ans: %d\n" ans;

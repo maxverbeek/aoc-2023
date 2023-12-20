@@ -1,6 +1,6 @@
 use std::{
     cmp::{max, min},
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     fmt::Display,
     io::stdin,
     ops::Add,
@@ -168,46 +168,30 @@ fn part1(steps: Vec<Step>) {
         grid[row][col] = Some(d);
     }
 
-    print_grid(&grid);
+    // print_grid(&grid);
 
-    // println!("{}", scanline(&grid) +/*   */map.len());
-}
-
-fn gcd(mut n: isize, mut m: isize) -> isize {
-    assert!(n != 0 && m != 0);
-    while m != 0 {
-        if m < n {
-            std::mem::swap(&mut m, &mut n);
-        }
-        m %= n;
-    }
-    n
+    println!("part 1: {}", scanline(&grid) + map.len());
 }
 
 fn part2(steps: Vec<Step>) {
-    let first = steps[0].distance;
-    let divider = steps
-        .iter()
-        .map(|s| s.distance)
-        .fold(first, |acc, d| gcd(acc, d));
-
-    dbg!(&steps);
-    println!("gcd: {}", divider);
-
-    dbg!(&steps.len());
-
     let mut coords = vec![Tuple2(0, 0)];
+    let mut total_distance = 0;
 
+    // idea: subdivide the area into triangles. Each triangle is made up of
+    // 3 points: (0, 0); v1; v2.
+    // if we add up the surface area of all triangles we end up with the surface area of the total
+    // area. Due to the winding of the triangle, if at any point we go around a corner, the area of
+    // the triangle becomes negative. so this will still work.
     for step in steps.iter() {
         let last = coords.last().unwrap();
 
         let Tuple2(dr, dc) = step.direction.deltas();
-        let dist = step.distance;
-        let rows = dr * dist;
-        let cols = dc * dist;
+        let rows = dr * step.distance;
+        let cols = dc * step.distance;
 
         let new = Tuple2(last.0 + rows, last.1 + cols);
         coords.push(new);
+        total_distance += step.distance;
     }
 
     let mut sum = 0;
@@ -217,12 +201,19 @@ fn part2(steps: Vec<Step>) {
         let Tuple2(row1, col1) = coords[i];
         let Tuple2(row2, col2) = coords[j];
 
+        // area of a triangle is the below formula divided by 2. I'm dividing at the end to avoid
+        // rounding errors.
         sum += row2 * col1 - row1 * col2;
     }
 
     sum /= 2;
 
-    println!("part 2: {}", sum)
+    // after having summed the triangle areas we need to consider how the line moves around
+    // squares. my assumption is that each vertex is a coordinate that lies in the exact center of
+    // a square. When doing so we added too little surface area: the surface area that is missing
+    // is half of the surface area of the perimeter. All my answers are off by 1 so I added that
+    // too. I'm not sure where this 1 extra surface went.
+    println!("part 2: {}", sum + total_distance / 2 + 1);
 }
 
 fn main() {
@@ -238,7 +229,7 @@ fn main() {
         .map(|l| Into::<Step>::into(Into::<ColorStep>::into(l.as_str())))
         .collect();
 
-    // part1(part1steps);
+    part1(part1steps);
     part2(part2steps);
 }
 

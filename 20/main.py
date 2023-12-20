@@ -1,4 +1,5 @@
 import sys
+import itertools
 
 def flipflop(name: str, inputs: list[str], outputs: list[str]):
     def pulser(pulse: bool, _from: str):
@@ -94,27 +95,36 @@ if __name__ == "__main__":
 
     allpulses = { True: 0, False: 0 }
 
-    part2 = None
-
     for i in range(1, 1001):
         allpulses[False] += 1
         pulses = handlepulse(modules, [('button', 'broadcaster', False)])
 
-        for (_sender, recipient, pulse) in pulses:
-            if recipient == 'rx' and pulse == False and part2 == None:
-                part2 = i
-
         for (f, to, pulse) in pulses:
             allpulses[pulse] += 1
 
-    i = 1001
-    while part2 == None:
-        pulses = handlepulse(modules, [('button', 'broadcaster', False)])
-        for (_sender, recipient, pulse) in pulses:
-            if recipient == 'rx' and pulse == False and part2 == None:
-
-                print(f"part 2: {i}")
-                part2 = i
-
     print(f"part 1: {allpulses[True] * allpulses[False]}")
-    print(f"part 2: {part2}")
+
+    # nomnoml graph:
+    # for name, ins in inputs.items():
+    #     for i in ins:
+    #         print(f"[{i}] -> [{name}]")
+
+    modules = { name: makemodule(t, name, inputs.get(name, []), outputs) for (t, name, outputs) in moduleinput }
+
+    # rx has 1 input: qn. qn has 4 inputs. keep track of when these inputs are True (maybe it's periodic?)
+    qniters = dict()
+    periods = dict()
+    for i in itertools.count(1):
+        pulses = handlepulse(modules, [('button', 'broadcaster', False)])
+
+        for (sender, recipient, pulse) in pulses:
+            if recipient == 'qn' and pulse:
+                qniters[sender] = qniters.get(sender, []) + [i]
+                if len(qniters[sender]) > 1:
+                    periodmaybe = qniters[sender][-1] - qniters[sender][-2]
+                    print(f"period {sender}: {periodmaybe}")
+                    periods[sender] = periodmaybe
+        if len(periods) == 4:
+            from math import lcm
+            print(lcm(*[ v for k, v in periods.items() ]))
+            break

@@ -1,5 +1,4 @@
 # Advent of Code solutions for 2023
-
 This year's challenge is to use a randomly picked language every day:
 
 1. Kotlin
@@ -22,3 +21,4 @@ This year's challenge is to use a randomly picked language every day:
 18. Prolog (but I used Rust (and I tried it in OCaml but it was hard))
 19. Java
 20. Python
+21. Kotlin

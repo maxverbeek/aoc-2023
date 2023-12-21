@@ -6,7 +6,7 @@ fun main(args: Array<String>) {
         .toList().toTypedArray()
 
     bfs(lines)
-    bfs2(lines)
+    bfs2(lines, 26501365);
 }
 
 fun findStart(lines: Array<String>): Pair<Int, Int> {
@@ -84,7 +84,7 @@ fun neighbours2(position: Pair<Int, Int>, visited: Set<Pair<Int, Int>>): List<Pa
         .filter { pair -> !visited.contains(pair) }
 }
 
-fun bfs2(lines: Array<String>) {
+fun bfs2(lines: Array<String>, target: Int) {
     val start = findStart(lines);
     var queue1 = ArrayDeque<Pair<Int, Int>>();
     var queue2 = ArrayDeque<Pair<Int, Int>>();
@@ -94,21 +94,15 @@ fun bfs2(lines: Array<String>) {
 
     queue1.addFirst(start);
 
-    // it is useful to keep track of whether the nr of steps is even or odd, because like a chessboard where you can
-    // only move in a +, you can only reach black squares from white squares, and white squares from black squares.
-    // at some point the entire grid is filled, and will alternate between having the "even" squares filled, and having
-    // "odd" squares filled. if the total nr of steps is an even number, we only care about repetition on the even squares.
-    val steps = 500
-    val evenodd = steps % 2;
+    // since the target is very very large we cannot iterate to it. However: I noticed that the nr of reachable tiles increases
+    // roughly quadratically in the nr of steps.. The idea: I assume that there is some sort periodicity in the width of the grid (131).
+    // using this, I want to create a formula f(m + kt) = something in terms of t where ultimately I calculate f(target), and express target in
+    // m + kt where k is my period (131). therefore: m shall be the remainder (target % 131) = 65. this means that by substition we end up with
+    // f(x) = ... where x = m + kt. we can extract values for f() at k = 0, 1, 2, ... and eventually calculate f() for k = (target - m) / width
+    val m = target % width;
+    val steps = 4 * width + m;
 
-    var plotsreachedatstep = Array<Int>(steps + 1) { 0 };
-
-    // keep a map of nr of steps taken in each grid (coordinate divided by size)
-    var previoussteps = HashMap<Pair<Int, Int>, Long>()
-    var newsteps = HashMap<Pair<Int, Int>, Long>()
-
-    // for grids that are repeating, save the number that they are repeating at.
-    var frozengrids = HashMap<Pair<Int, Int>, Long>()
+    var f = Array<Int>(5) { 0 }
 
     for (i in 0..steps) {
         var visited = HashSet<Pair<Int, Int>>()
@@ -121,38 +115,9 @@ fun bfs2(lines: Array<String>) {
                 visited.add(step)
 
                 for (neighbour in neighbours2(step, visited)) {
-                    // don't add this neighbour if we can precompute the entire grid that it belongs to
-                    val grid = Pair(neighbour.first / height, neighbour.second / width)
-                    if (frozengrids.containsKey(grid)) {
-                        continue
-                    }
-
                     queue2.addLast(neighbour)
                 }
             }
-        }
-
-        if (i % 2 == evenodd) {
-            // count steps per grid repetition
-            for (s in visited) {
-                val row = s.first / height
-                val col = s.second / width
-
-                newsteps[Pair(row, col)] = newsteps.getOrDefault(Pair(row, col), 0) + 1
-            }
-
-            // see if any new grids are repeating, and should be frozen
-            for ((grid1, steps1) in previoussteps) {
-                if (steps1 == newsteps[grid1]) {
-                    println("$grid1 is the same ($steps1) as two steps ago.")
-                    frozengrids[grid1] = steps1;
-                }
-            }
-
-            val tmp1 = previoussteps
-            previoussteps = newsteps
-            newsteps = tmp1
-            newsteps.clear()
         }
 
         // swap the queues
@@ -160,15 +125,65 @@ fun bfs2(lines: Array<String>) {
         queue2 = queue1
         queue1 = tmp2
 
-        plotsreachedatstep[i] = visited.size;
+
+        if (i % width == 65) {
+            println("(65) -- step: $i, visited: ${visited.size}")
+            f[i / width] = visited.size;
+        }
     }
 
-//    plotsreachedatstep.withIndex().forEach { (idx, value) -> println("$idx -> $value") }
-//
-//    for (i in 2..steps) {
-//        val difference = plotsreachedatstep[i] - plotsreachedatstep[i - 2]
-//        println("step $i - ${i-2}: $difference")
-//    }
+    f.withIndex().forEach { (i, f) -> println("$i: $f")}
+    //    0: 3799
+    //    1: 34047
+    //    2: 94475
+    //    3: 185083
+    //    4: 305871
+
+    // Keep evaluating derivatives to determine the constant for the quadratic term (see day 9)
+    val df = derivative(f)
+    df.withIndex().forEach { (i, f) -> println("$i: $f")}
+    //    0: 30248
+    //    1: 60428
+    //    2: 90608
+    //    3: 120788
+
+    val ddf = derivative(df)
+    ddf.withIndex().forEach { (i, f) -> println("$i: $f")}
+    //    0: 30180
+    //    1: 30180
+    //    2: 30180
+
+    // now we have f''(x) = 30180
+    // -> f'(x) = 30180 * x + C
+    // -> f(x) = 15090 * x^2 + Cx + D
+    // with -> f(1) = 3799 and f(2) = 34047
+    // f(1) = 15090 + C + D     = 3799
+    // f(2) = 15090 *4 + 2C + D = 34047
+    // -> C  + D = -11291
+    // -> 2C + D = -26313
+    // -> C = (-26313 - -11291) = -15022
+    // -> D = (-11291 - -15022) = 3731
+    //
+    // -> f(x) = 15090 * x^2 - 15022 * x + 3731
+
+    // since we want to evaluate what the nr of steps is for the target, we need to transform it to a suitable x value:
+    // f(m + 0t) = 3799 = f(1)
+    // f(m + 1t) = f(2)
+    // -> k = (target - m) / t + 1
+
+    val k: Long = (target - m as Long) / width + 1
+    val totalsteps: Long = (15090 * k * k) - (15022 * k) + 3731
+    println("part 2: $totalsteps")
+}
+
+fun derivative(nums: Array<Int>): Array<Int> {
+    var res = Array(nums.size - 1) { 0 }
+
+    for (i in 1 until nums.size) {
+        res[i - 1] = nums[i] - nums[i - 1]
+    }
+
+    return res
 }
 
 fun printgrid(lines: Array<String>, visited: Set<Pair<Int, Int>>) {

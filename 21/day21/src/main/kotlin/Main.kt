@@ -1,3 +1,5 @@
+import kotlin.collections.HashMap
+
 fun main(args: Array<String>) {
     var lines = generateSequence { readLine() }
         .takeWhile { it != null }
@@ -62,10 +64,10 @@ fun bfs(lines: Array<String>) {
         queue2 = queue1
         queue1 = tmp
 
-//        if (i == steps) {
+        if (i == steps) {
         val count = visited.flatten().count { p -> p }
-        println("visited: $count")
-//        }
+            println("part 1: $count")
+        }
     }
 }
 
@@ -92,8 +94,21 @@ fun bfs2(lines: Array<String>) {
 
     queue1.addFirst(start);
 
-    val steps = 100
+    // it is useful to keep track of whether the nr of steps is even or odd, because like a chessboard where you can
+    // only move in a +, you can only reach black squares from white squares, and white squares from black squares.
+    // at some point the entire grid is filled, and will alternate between having the "even" squares filled, and having
+    // "odd" squares filled. if the total nr of steps is an even number, we only care about repetition on the even squares.
+    val steps = 500
+    val evenodd = steps % 2;
+
     var plotsreachedatstep = Array<Int>(steps + 1) { 0 };
+
+    // keep a map of nr of steps taken in each grid (coordinate divided by size)
+    var previoussteps = HashMap<Pair<Int, Int>, Long>()
+    var newsteps = HashMap<Pair<Int, Int>, Long>()
+
+    // for grids that are repeating, save the number that they are repeating at.
+    var frozengrids = HashMap<Pair<Int, Int>, Long>()
 
     for (i in 0..steps) {
         var visited = HashSet<Pair<Int, Int>>()
@@ -106,32 +121,54 @@ fun bfs2(lines: Array<String>) {
                 visited.add(step)
 
                 for (neighbour in neighbours2(step, visited)) {
+                    // don't add this neighbour if we can precompute the entire grid that it belongs to
+                    val grid = Pair(neighbour.first / height, neighbour.second / width)
+                    if (frozengrids.containsKey(grid)) {
+                        continue
+                    }
+
                     queue2.addLast(neighbour)
                 }
             }
         }
 
-        // swap the queues
-        val tmp = queue2
-        queue2 = queue1
-        queue1 = tmp
+        if (i % 2 == evenodd) {
+            // count steps per grid repetition
+            for (s in visited) {
+                val row = s.first / height
+                val col = s.second / width
 
-        plotsreachedatstep[i] = visited.size;
+                newsteps[Pair(row, col)] = newsteps.getOrDefault(Pair(row, col), 0) + 1
+            }
 
-        if (i == steps) {
-            val count = visited.size
-            println("visited: $count")
+            // see if any new grids are repeating, and should be frozen
+            for ((grid1, steps1) in previoussteps) {
+                if (steps1 == newsteps[grid1]) {
+                    println("$grid1 is the same ($steps1) as two steps ago.")
+                    frozengrids[grid1] = steps1;
+                }
+            }
+
+            val tmp1 = previoussteps
+            previoussteps = newsteps
+            newsteps = tmp1
+            newsteps.clear()
         }
 
-        printgrid(lines, visited)
+        // swap the queues
+        val tmp2 = queue2
+        queue2 = queue1
+        queue1 = tmp2
+
+        plotsreachedatstep[i] = visited.size;
     }
 
-    plotsreachedatstep.withIndex().forEach { (idx, value) -> println("$idx -> $value") }
-
-    for (i in 1..steps) {
-        val difference = plotsreachedatstep[i] - plotsreachedatstep[i - 1]
-        println("step $i: + $difference")
-    }
+//    plotsreachedatstep.withIndex().forEach { (idx, value) -> println("$idx -> $value") }
+//
+//    for (i in 2..steps) {
+//        val difference = plotsreachedatstep[i] - plotsreachedatstep[i - 2]
+//        println("step $i - ${i-2}: $difference")
+//    }
 }
 
 fun printgrid(lines: Array<String>, visited: Set<Pair<Int, Int>>) {

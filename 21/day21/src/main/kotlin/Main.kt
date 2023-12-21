@@ -171,7 +171,7 @@ fun bfs2(lines: Array<String>, target: Int) {
     // f(m + 1t) = f(2)
     // -> k = (target - m) / t + 1
 
-    val k: Long = (target - m as Long) / width + 1
+    val k = (target.toLong() - m.toLong()) / width.toLong() + 1
     val totalsteps: Long = (15090 * k * k) - (15022 * k) + 3731
     println("part 2: $totalsteps")
 }

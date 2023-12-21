@@ -11,3 +11,6 @@ project
 # ocaml
 *.cmo
 *.cmi
+
+.idea
+*.iml

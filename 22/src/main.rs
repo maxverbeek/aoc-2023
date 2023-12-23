@@ -243,7 +243,6 @@ fn main() {
             }
         }
 
-        println!("for idx {brick} dropped {}", dropped.len() - 1);
         totaldropped += dropped.len() - 1;
     }
 

@@ -1,11 +1,11 @@
 use std::{
     cmp::{max, min},
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     io::stdin,
     println,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Voxel(usize, usize, usize);
 
 impl Voxel {
@@ -14,7 +14,7 @@ impl Voxel {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Block(Voxel, Voxel);
 
 impl Block {
@@ -203,21 +203,69 @@ fn main() {
 
     println!("part 1: {}", part1);
 
+    let (_, _, maxz) = dim_sizes(&blocks);
+
+    let mut bricksonfloor = vec![0; maxz + 1];
+    for b in blocks.iter() {
+        bricksonfloor[b.minz()] += 1;
+    }
+
+    let mut bricksabovefloor = vec![0; maxz + 1];
+    bricksabovefloor[maxz] = 0;
+    for z in (0..maxz).rev() {
+        bricksabovefloor[z] = bricksabovefloor[z + 1] + bricksonfloor[z + 1];
+    }
+
+    print_map(&map);
+    dbg!(&bricksabovefloor);
+
     let mut totaldropped = 0;
-    let mut dropifdropped = vec![HashSet::<usize>::new(); blocks.len()];
 
     for (brick, supporting) in supports.iter().enumerate().rev() {
-        dropmany(brick, &mut dropifdropped, &supports, &supported_by);
+        let mut dropped = HashSet::<usize>::new();
+        let mut dropping = VecDeque::from([brick]);
 
-        println!(
-            "recursive drop {} yields {} dropped",
-            brick,
-            dropifdropped[brick].len() - 1
-        );
-        totaldropped += dropifdropped[brick].len() - 1;
+        // it turns out this naive approach is fast enough. my plan was to optimize it further with
+        // the above arrays that check if an entire floor is dropped, that it could also instantly
+        // know how many bricks should be dropped from the floors above. but this is not
+        // implemeneted because this approach is already near instant.
+        while let Some(dropnew) = dropping.pop_front() {
+            if dropped.contains(&dropnew) {
+                continue;
+            }
+
+            dropped.insert(dropnew);
+            // test if dropnew has unsupported bricks
+            for brick in supports[dropnew].iter() {
+                if supported_by[*brick].iter().all(|b| dropped.contains(b)) {
+                    dropping.push_back(*brick);
+                }
+            }
+        }
+
+        println!("for idx {brick} dropped {}", dropped.len() - 1);
+        totaldropped += dropped.len() - 1;
     }
 
     println!("part 2: {}", totaldropped);
+}
+
+fn all_on_level_dropped(
+    dropped: &HashSet<usize>,
+    map: &Vec<Vec<Vec<Option<usize>>>>,
+    level: usize,
+) -> bool {
+    for x in 0..map.len() {
+        for y in 0..map[x].len() {
+            if let Some(b) = map[x][y][level] {
+                if !dropped.contains(&b) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 fn dropmany(

@@ -40,6 +40,7 @@
             elixir # day 13
             rust-toolchain.default # day 14
             nodePackages.ts-node # day 17
+            ruby
           ];
         };
       });

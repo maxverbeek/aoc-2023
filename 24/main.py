@@ -17,7 +17,8 @@ def find_intersection(l1, l2):
     x2, y2, z2, dx2, dy2, dz2 = l2
 
     # Check if the lines are parallel
-    det = dx1 * dy2 - dy1 * dx2
+    # det = dx1 - dx2 + dy1 - dy2
+    det = dx1 * dy2 - dx2 * dy1
     if det == 0:
         # no intersection
         return None
@@ -31,16 +32,37 @@ def find_intersection(l1, l2):
     y = y1 + t * dy1
     z = z1 + t * dz1
 
-    return x, y, z
+    return x, y, z, t, s
 
-def part1(l1, l2):
+times = {}
+
+def addintersection(i, t, j, s):
+    iexists = i not in times or times[i] > t
+    jexists = j not in times or times[j] > s
+
+    print(f"{iexists=} {jexists=}")
+
+    if iexists and jexists:
+        times[i] = t
+        times[j] = s
+        return
+
+def part1(i, j):
+    l1 = lines[i]
+    l2 = lines[j]
+
     intersect = find_intersection(l1, l2)
 
     if intersect != None:
-        x, y, z = intersect
+        x, y, z, t, s = intersect
 
-        if inbounds(x) and inbounds(y):
+        if inbounds(x) and inbounds(y) and t > 0 and s > 0:
+            print(f"{l1} x {l2} intersect at {x}, {y} (in bounds)")
             return True
+
+        print(f"{l1} x {l2} intersect at {x}, {y} (not in bounds)")
+    else:
+        print(f"{l1} and {l2} never intersect")
 
     return False
 
@@ -49,8 +71,8 @@ p1count = 0
 for i in range(len(lines)):
     l1 = lines[i]
 
-    for l2 in lines[(i+1):]:
-        if part1(l1, l2):
+    for j in range(i+1, len(lines)):
+        if part1(i, j):
             p1count += 1
 
 print(p1count)

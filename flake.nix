@@ -41,6 +41,7 @@
             rust-toolchain.default # day 14
             nodePackages.ts-node # day 17
             ruby
+            (python3.withPackages (ps: [ ps.numpy ps.sympy ]))
           ];
         };
       });

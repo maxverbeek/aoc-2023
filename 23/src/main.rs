@@ -1,4 +1,4 @@
-use std::{io::stdin, ops::Neg};
+use std::{collections::HashMap, io::stdin};
 
 type VV<T> = Vec<Vec<T>>;
 type TileVec = Vec<Vec<char>>;
@@ -34,6 +34,27 @@ fn main() {
         .filter(|c| **c != '#')
         .count();
     println!("chars: {}", count);
+}
+
+type Pos = (usize, usize);
+
+// transform the map into a graph, where each node represents a junction. each node will be an
+// index in a vector, and contains an array of neighbours, along with a number of steps to get
+// there.
+fn make_graph(tiles: &TileVec) -> Vec<(usize, usize)> {
+    let mut junction_to_node: HashMap<Pos, usize> = HashMap::new();
+    let mut graph = vec![];
+
+    let height = tiles.len();
+    let width = tiles[0].len();
+
+    // use 1 .. boundary - 1 because the boundary is surrounded with wall and not worth checking.
+    // this way we dont need to check for out of bounds conditions
+    for r in 1..(height - 1) {
+        for c in 1..(width - 1) {}
+    }
+
+    graph
 }
 
 fn walk(

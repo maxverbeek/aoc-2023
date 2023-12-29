@@ -22,3 +22,7 @@ This year's challenge is to use a randomly picked language every day:
 19. Java
 20. Python
 21. Kotlin
+22. Elixir (but I used Rust)
+23. Prolog (but I used Rust)
+24. Python
+25. Ruby
